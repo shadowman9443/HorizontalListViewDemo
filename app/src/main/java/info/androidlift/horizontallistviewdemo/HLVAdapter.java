@@ -2,6 +2,8 @@ package info.androidlift.horizontallistviewdemo;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,19 +12,23 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 public class HLVAdapter extends RecyclerView.Adapter<HLVAdapter.ViewHolder> {
 
     ArrayList<String> alName;
     ArrayList<Integer> alImage;
+    private ArrayList<String> _filePaths = new ArrayList<String>();
     Context context;
 
-    public HLVAdapter(Context context, ArrayList<String> alName, ArrayList<Integer> alImage) {
+    public HLVAdapter(Context context, ArrayList<String> alName,    ArrayList<String> _filePaths) {
         super();
         this.context = context;
         this.alName = alName;
-        this.alImage = alImage;
+        this._filePaths = _filePaths;
     }
 
     @Override
@@ -36,15 +42,21 @@ public class HLVAdapter extends RecyclerView.Adapter<HLVAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(ViewHolder viewHolder, int i) {
         viewHolder.tvSpecies.setText(alName.get(i));
-        viewHolder.imgThumbnail.setImageResource(alImage.get(i));
 
+        Bitmap image = decodeFile(_filePaths.get(i), 100,
+                100);
+        viewHolder.imgThumbnail.setImageBitmap(image);
         viewHolder.setClickListener(new ItemClickListener() {
             @Override
             public void onClick(View view, int position, boolean isLongClick) {
                 if (isLongClick) {
-                    Toast.makeText(context, "#" + position + " - " + alName.get(position) + " (Long click)", Toast.LENGTH_SHORT).show();
-                    context.startActivity(new Intent(context, MainActivity.class));
+                  //  Toast.makeText(context, "#" + position + " - " + alName.get(position) + " (Long click)", Toast.LENGTH_SHORT).show();
+
                 } else {
+                    context.startActivity(new Intent(context, MainActivity.class));
+                    Intent intent = new Intent(context, FullScreenViewActivity.class);
+                    intent.putExtra("position", position);
+                    context.startActivity(intent);
                     Toast.makeText(context, "#" + position + " - " + alName.get(position), Toast.LENGTH_SHORT).show();
                 }
             }
@@ -84,6 +96,31 @@ public class HLVAdapter extends RecyclerView.Adapter<HLVAdapter.ViewHolder> {
             clickListener.onClick(view, getPosition(), true);
             return true;
         }
+    }
+
+    public static Bitmap decodeFile(String filePath, int WIDTH, int HIGHT) {
+        try {
+
+            File f = new File(filePath);
+
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(new FileInputStream(f), null, o);
+
+            final int REQUIRED_WIDTH = WIDTH;
+            final int REQUIRED_HIGHT = HIGHT;
+            int scale = 1;
+            while (o.outWidth / scale / 2 >= REQUIRED_WIDTH
+                    && o.outHeight / scale / 2 >= REQUIRED_HIGHT)
+                scale *= 2;
+
+            BitmapFactory.Options o2 = new BitmapFactory.Options();
+            o2.inSampleSize = scale;
+            return BitmapFactory.decodeStream(new FileInputStream(f), null, o2);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 }
